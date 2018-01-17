@@ -2,8 +2,7 @@ from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support.ui import Select
-import unittest, time
-from datetime import timedelta, date
+from datetime import timedelta, date, datetime
 
 def daterange(start_date, end_date):
     for n in range(int ((end_date - start_date).days)):
@@ -17,7 +16,7 @@ def checkLoc(driver, loc):
     driver.find_element_by_id("taskCID").click()
     driver.find_element_by_id("first_name").click()
     driver.find_element_by_id("first_name").clear()
-    driver.find_element_by_id("first_name").send_keys("MICHEAL")
+    driver.find_element_by_id("first_name").send_keys("MICHAEL")
     driver.find_element_by_id("last_name").clear()
     driver.find_element_by_id("last_name").send_keys("CORLEONE")
     driver.find_element_by_id("areaCode").clear()
@@ -31,7 +30,7 @@ def checkLoc(driver, loc):
     el = driver.find_element_by_css_selector("p.no-margin-bottom") 
     if el and (not "appointment" in el.text): 
         els = driver.find_elements_by_css_selector("p.no-margin-bottom") 
-        return '\n'.join( [x.text for x in els] )
+        return els[-1].text
     return None
 
 def getDriver():
@@ -39,33 +38,26 @@ def getDriver():
     driver.implicitly_wait(30)
     return driver
 
-driver = getDriver()
-print(checkLoc(driver, "SANTA CLARA"))
-print(checkLoc(driver, "LOS GATOS"))
-driver.quit()
+dates = {}
+loc = ["SANTA CLARA", "LOS GATOS"]
 
-"""
-# Date range check: check availability for a sequence of dates
-# Not required as of now, the dmv site returns the earliest available appointment within next 30 days. 
-# Used this if looking for dates after first month.
+def compare(dateNew, dateOld):
+    if dateNew < dateOld:
+        retur
 
-start_date = date(2018, 1, 18) 
-end_date = date(2018, 2, 1)
-for single_date in daterange(start_date, end_date): 
-    if single_date.weekday() <= 5: 
-        time.sleep(2) 
+def checkDMV(): 
+    driver = getDriver() 
+    updated = False
+    for l in loc: 
+        date = checkLoc(driver, l)
 
-        el = driver.find_element_by_css_selector("p.no-margin-bottom")
-        if el and (not "appointment" in el.text):
-            els = driver.find_elements_by_css_selector("p.no-margin-bottom")
-            for ele in els:
-                print(ele.text)
-            break
+        if date:
+            date = date.split("at")[0]
+            date = datetime.strptime(date, '%A, %B %d, %Y ') 
+            if l in dates and dates[l] and date < dates[l]:
+                updated = True
 
-        dtStr = "{dt.month}_{dt.day}_{dt.year}".format(dt=single_date)
-        driver.find_element_by_css_selector("span.ng-button-icon-span").click() 
-        element = driver.find_element_by_css_selector("td.ng_cal_date_{}.ng_cal_selectable".format(dtStr)) 
-        if element: 
-            element.click() 
-            driver.find_element_by_id("checkAvail").click()
-"""
+        dates[l] = date
+
+    driver.quit()
+    return (updated, dates)
